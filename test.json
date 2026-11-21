@@ -1,1 +1,121 @@
-{"ok":true,"count":3,"note":"hello from github"}
+<!--
+  WildApricot data-loading test  (Apps Script version, no GitHub)
+  ---------------------------------------------------------------
+  This answers one question: can a WildApricot page load a data file
+  from outside WildApricot?
+
+  If it can, the specialist directory can update itself every day.
+  If it can't, we regenerate the page monthly instead.
+
+  The address is already filled in. Nothing to edit.
+
+  1. Make a new UNPUBLISHED page in WildApricot, add a Custom HTML
+     gadget, and paste this whole file into it
+
+  2. Save, then view the page. It says in plain words whether the
+     data loaded or was blocked
+
+  3. Send me a screenshot either way, then delete the test page
+
+  Nothing here touches any live page.
+-->
+
+<div id="ausct-root">
+<style>
+  #ausct-root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+    max-width:620px;margin:0 auto;padding:26px 20px;line-height:1.55;color:#16201d;}
+  #ausct-root *{box-sizing:border-box;}
+  .ausct-h{font-size:19px;font-weight:600;margin:0 0 4px;}
+  .ausct-s{font-size:14px;color:#4a5a55;margin:0 0 18px;}
+  .ausct-box{border:1px solid #ddd6c6;border-radius:12px;padding:16px 18px;
+    background:#fbf9f3;margin:0 0 12px;}
+  .ausct-box h3{margin:0 0 6px;font-size:15px;font-weight:600;}
+  .ausct-box p{margin:0;font-size:14px;color:#4a5a55;}
+  .ausct-wait{border-left:4px solid #b9b2a2;}
+  .ausct-good{border-left:4px solid #2e7d52;background:#eef6f1;}
+  .ausct-bad {border-left:4px solid #c1593b;background:#f9efec;}
+  .ausct-raw{font-family:ui-monospace,Consolas,monospace;font-size:12px;
+    background:#efe9dc;border-radius:8px;padding:10px 12px;margin-top:10px;
+    white-space:pre-wrap;word-break:break-all;color:#3a4a45;}
+</style>
+
+  <p class="ausct-h">WildApricot data-loading test</p>
+  <p class="ausct-s">Checking whether this page may load data from the AUS
+     script. Temporary test page; it changes nothing.</p>
+
+  <div class="ausct-box ausct-wait" id="ausct-out">
+    <h3>Testing&hellip;</h3>
+    <p>If this message has not changed within about ten seconds, the request
+       was blocked silently, which is itself the answer.</p>
+  </div>
+
+<script>
+(function(){
+
+  // ===== URL: paste the /exec address from the deployed script here =====
+  var URL = "https://ausnathanielwu.github.io/aus-assets/test.json";
+  // ======================================================================
+
+  var box  = document.getElementById("ausct-out");
+  var done = false;
+
+  function show(cls, title, body, raw){
+    if (done) return;
+    done = true;
+    box.className = "ausct-box " + cls;
+    var html = "<h3>" + title + "</h3><p>" + body + "</p>";
+    if (raw) html += '<div class="ausct-raw">' + raw + "</div>";
+    box.innerHTML = html;
+  }
+
+  if (URL.indexOf("PASTE_") === 0) {
+    show("ausct-bad", "No address set",
+         "The URL line in this gadget still has the placeholder in it. " +
+         "Paste the /exec address from the deployed script and save again.");
+    return;
+  }
+
+  // A silently blocked request never rejects, so time out on our own.
+  setTimeout(function(){
+    show("ausct-bad", "Blocked (no response)",
+         "The request never finished. WildApricot is almost certainly " +
+         "stopping this page from loading outside data. We will use the " +
+         "monthly regenerate approach instead.");
+  }, 10000);
+
+  try {
+    fetch(URL, {cache:"no-store"})
+      .then(function(r){
+        if (!r.ok) throw new Error("the server replied " + r.status);
+        return r.text();
+      })
+      .then(function(txt){
+        var parsed;
+        try { parsed = JSON.parse(txt); } catch(e){
+          show("ausct-bad", "Something came back, but not usable data",
+               "The page received a reply, but it was not readable as data. " +
+               "Often this means a sign-in page was returned instead, which " +
+               "points to the deployment not being set to Anyone.",
+               txt.slice(0,300));
+          return;
+        }
+        show("ausct-good", "It works",
+             "This page loaded data from GitHub successfully. The directory " +
+             "can update itself automatically. Send Nathaniel this screenshot.",
+             JSON.stringify(parsed).slice(0,400));
+      })
+      .catch(function(err){
+        show("ausct-bad", "Blocked",
+             "The request was refused. Expected if WildApricot does not allow " +
+             "pages to load outside data. Send Nathaniel this screenshot — " +
+             "the wording below tells me which rule stopped it.",
+             String(err && err.message ? err.message : err));
+      });
+  } catch (err) {
+    show("ausct-bad", "Blocked before it started",
+         "The page was not even allowed to make the request.",
+         String(err && err.message ? err.message : err));
+  }
+})();
+</script>
+</div>
